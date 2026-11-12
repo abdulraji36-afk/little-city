@@ -1,7 +1,12 @@
 import {SIZE,CATALOG,GOALS,key,water,freshCity,stats,placement,build,tick,restore} from './engine.mjs';
+import {THEMES,resolveTheme,paint} from './themes.mjs';
 const $=id=>document.getElementById(id), SAVE_KEY='little-city-save-v1';
-let city=freshCity(),restoredSave=false,selected=null,category='all',hover=null,focusTile=null,metrics,elapsed=0,lastFrame=0,toastTimer,view={zoom:window.innerWidth<600?1.6:1,panX:0,panY:0},pointer=null,dragging=false,w=0,h=0,originX=0,originY=0,scale=1,dpr=1,particles=[];
+let city=freshCity(),restoredSave=false,selected=null,category='all',hover=null,focusTile=null,metrics,elapsed=0,lastFrame=0,toastTimer,view={zoom:window.innerWidth<600?1.85:1.08,panX:0,panY:0},pointer=null,dragging=false,w=0,h=0,originX=0,originY=0,scale=1,dpr=1,particles=[];
 try{const saved=localStorage.getItem(SAVE_KEY);if(saved){city=restore(saved);restoredSave=true;}}catch(e){console.warn('City save could not be restored.',e.message);}
+const UI_THEME_KEY='little-city-ui-theme-v1';
+let uiTheme='modern',currentAdvice='';
+try{uiTheme=resolveTheme(localStorage.getItem(UI_THEME_KEY));}catch{}
+document.body.dataset.theme=uiTheme;
 const canvas=$('cityCanvas'),TW=56,TH=28;
 let ctx=canvas.getContext('2d');
 const money=n=>'$'+Math.round(n).toLocaleString('en-US');
@@ -9,15 +14,15 @@ const icons={road:'road',home:'home',apartment:'home',shop:'work',factory:'work'
 const months=['March','April','May','June','July','August','September','October','November','December','January','February'];
 const hash=(x,y,n=0)=>{const v=Math.sin(x*127.1+y*311.7+n*79.6)*43758.5453;return v-Math.floor(v);};
 const p=(x,y,z=0)=>[(x-y)*TW/2,(x+y)*TH/2-z];
-function poly(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.6;ctx.stroke();}}
-function line(points,color,width=1){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();}
+function poly(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();if(fill){ctx.fillStyle=paint(fill,uiTheme);ctx.fill();}if(stroke){ctx.strokeStyle=paint(stroke,uiTheme);ctx.lineWidth=.6;ctx.stroke();}}
+function line(points,color,width=1){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.strokeStyle=paint(color,uiTheme);ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();}
 function prism(x,y,bw,bd,bh,colors,z=0){
   const c=typeof colors==='string'?[colors,colors,colors]:colors;
   poly([p(x,y+bd,z),p(x+bw,y+bd,z),p(x+bw,y+bd,z+bh),p(x,y+bd,z+bh)],c[1]);
   poly([p(x+bw,y,z),p(x+bw,y+bd,z),p(x+bw,y+bd,z+bh),p(x+bw,y,z+bh)],c[2]);
   poly([p(x,y,z+bh),p(x+bw,y,z+bh),p(x+bw,y+bd,z+bh),p(x,y+bd,z+bh)],c[0]);
 }
-function ellipse(x,y,rx,ry,color){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();}
+function ellipse(x,y,rx,ry,color){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=paint(color,uiTheme);ctx.fill();}
 function faceWindow(x,y,z,face='x',ww=.11,wh=5,color='#5f817e'){
   if(face==='x')poly([p(x,y,z),p(x,y+ww,z),p(x,y+ww,z+wh),p(x,y,z+wh)],color);
   else poly([p(x,y,z),p(x+ww,y,z),p(x+ww,y,z+wh),p(x,y,z+wh)],color);
@@ -102,7 +107,7 @@ function drawRoad(x,y){
 }
 function tile(x,y,now){
  const isWater=water(x,y),v=hash(x,y),edge=x===0||y===0||x===SIZE-1||y===SIZE-1;
- const color=isWater?['#94bec0','#9bc3c3','#a2c7c5'][Math.floor(v*3)]:['#c3d09f','#c6d2a4','#becb99','#cad5a8','#c5d2a3'][Math.floor(v*5)];
+ const palette=THEMES[uiTheme],color=isWater?palette.water[Math.floor(v*3)]:palette.land[Math.floor(v*5)];
  poly([p(x,y),p(x+1,y),p(x+1,y+1),p(x,y+1)],color,isWater?'#a2c6c1':'#c1cea020');
  if(isWater){if(v>.4){const z=1+Math.sin(now*.001+x+y)*.3;line([p(x+.3,y+.3,z),p(x+.65,y+.3,z)],'#c9dfd1',.7);if(v>.7)line([p(x+.55,y+.6,z),p(x+.8,y+.6,z)],'#c3dcd0',.6);}}
  else if(!city.tiles[key(x,y)]&&v>.44){for(let i=0;i<3;i++){const xx=x+.15+hash(x,y,i+3)*.7,yy=y+.15+hash(y,x,i+7)*.7;line([p(xx,yy),p(xx,yy,1.3)],v>.8?'#adb98b':'#b6c18f',.65);}}
@@ -118,11 +123,11 @@ function nature(x,y){
 function badge(x,y,symbol,color){const [px,py]=p(x+.5,y+.5,60);ellipse(px,py,6,6,'#fff9e3');ctx.fillStyle=color;ctx.font='bold 8px sans-serif';ctx.textAlign='center';ctx.fillText(symbol,px,py+3);}
 function draw(now){
  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
- const bg=ctx.createRadialGradient(w*.45,h*.37,50,w*.45,h*.4,w*.8);bg.addColorStop(0,'#e4ebd8');bg.addColorStop(1,'#eaf0e2');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+ const bg=ctx.createRadialGradient(w*.45,h*.37,50,w*.45,h*.4,w*.8);bg.addColorStop(0,THEMES[uiTheme].sky[0]);bg.addColorStop(1,THEMES[uiTheme].sky[1]);ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
  ctx.save();ctx.translate(originX+view.panX,originY+view.panY);ctx.scale(scale,scale);
  // A quiet shadow gives the whole valley the feel of a little tabletop world.
  const corners=[p(0,0),p(SIZE,0),p(SIZE,SIZE),p(0,SIZE)];ctx.save();ctx.shadowColor='#70835416';ctx.shadowBlur=24;ctx.shadowOffsetY=15;poly(corners,'#c1cea0');ctx.restore();
- poly([p(0,SIZE),p(SIZE,SIZE),p(SIZE,SIZE,-9),p(0,SIZE,-9)],'#acbc8c');poly([p(SIZE,0),p(SIZE,SIZE),p(SIZE,SIZE,-9),p(SIZE,0,-9)],'#a3b789');
+ poly([p(0,SIZE),p(SIZE,SIZE),p(SIZE,SIZE,-9),p(0,SIZE,-9)],THEMES[uiTheme].edge[0]);poly([p(SIZE,0),p(SIZE,SIZE),p(SIZE,SIZE,-9),p(SIZE,0,-9)],THEMES[uiTheme].edge[1]);
  for(let sum=0;sum<SIZE*2-1;sum++)for(let x=0;x<SIZE;x++){const y=sum-x;if(y>=0&&y<SIZE)tile(x,y,now);}
  for(const [k,t]of Object.entries(city.tiles))if(t==='road'){const [x,y]=k.split(',').map(Number);drawRoad(x,y);}
  const active=hover||focusTile;
@@ -148,28 +153,28 @@ function draw(now){
  requestAnimationFrame(draw);
 }
 function resize(){const r=canvas.getBoundingClientRect();w=r.width;h=r.height;dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);updateScale();}
-function updateScale(){const availH=Math.max(130,h-315),fit=Math.min((w-60)/(SIZE*TW),availH/(SIZE*TH+65),1.25);scale=Math.max(.3,fit)*view.zoom;originX=w/2;originY=100+(h-315)/2-SIZE*TH*scale/2+15;}
+function updateScale(){const availH=Math.max(180,h-170),fit=Math.min((w-48)/(SIZE*TW),availH/(SIZE*TH+65),1.55);scale=Math.max(.28,fit)*view.zoom;originX=w/2;originY=h*.52-SIZE*TH*scale/2;}
 function screenTile(ev){const r=canvas.getBoundingClientRect(),sx=(ev.clientX-r.left-originX-view.panX)/scale,sy=(ev.clientY-r.top-originY-view.panY)/scale;
  const x=Math.floor(sy/TH+sx/TW),y=Math.floor(sy/TH-sx/TW);return x>=0&&x<SIZE&&y>=0&&y<SIZE?{x,y}:null;}
 function toast(text,error=false){$('toast').textContent=text;$('toast').classList.toggle('error',error);$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200);}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(city));$('saveState').lastChild.textContent='All changes saved';}catch(e){$('saveState').lastChild.textContent='Playing without autosave';}}
 function advanceMonth(){const result=tick(city);if(result.newGoals.length)toast(`${result.newGoals[0].name}! ${money(result.newGoals[0].reward)} grant received.`);renderUI();save();}
 function renderUI(){
- metrics=stats(city);$('cityName').textContent=city.name;$('mapCityName').textContent=city.name.toUpperCase()+' · RIVER VALLEY';$('money').textContent=money(city.money);$('income').textContent=(metrics.income>=0?'+':'−')+money(Math.abs(metrics.income))+'/mo';$('income').style.color=metrics.income>=0?'#809565':'#b88261';
- $('happiness').innerHTML=metrics.happiness+'<span>%</span>';$('happyBar').style.width=metrics.happiness+'%';$('sidePopulation').textContent=city.population.toLocaleString();$('capacityLabel').textContent='/ '+metrics.capacity.toLocaleString();$('employment').textContent=metrics.employment+'%';$('jobsLabel').textContent=metrics.jobs+' jobs';$('powerLabel').textContent=metrics.used+' / '+metrics.power;$('energyDot').style.background=metrics.powered?'#86a576':'#c49562';
- $('mobilePopulation').textContent=city.population.toLocaleString();$('mobileJobs').textContent=metrics.jobs;$('mobileEnergy').textContent=metrics.used+'/'+metrics.power;
- $('cityLevel').textContent=city.population>=1000?'Lovely metropolis':city.population>=500?'Flourishing city':city.population>=250?'Growing town':city.population>=120?'Lively neighborhood':'Budding village';
- $('cityDescription').textContent=city.population>=500?'A big heart and a thousand possibilities.':'A small town with a big tomorrow.';
+ metrics=stats(city);
+ $('cityName').textContent=city.name;$('money').textContent=money(city.money);
+ $('income').textContent=(metrics.income>=0?'+':'−')+money(Math.abs(metrics.income))+' / month';$('income').style.color=metrics.income>=0?'var(--accent)':'var(--gold)';
+ $('hudPopulation').textContent=city.population.toLocaleString();$('hudCapacity').textContent='Room for '+metrics.capacity;
+ $('happiness').innerHTML=metrics.happiness+'<span>%</span>';$('hudMood').textContent=metrics.happiness>=75?'Feeling good':metrics.happiness>=45?'Room to grow':'Needs some care';
+ $('hudPower').innerHTML=metrics.used+'<span>/'+metrics.power+'</span>';$('hudEnergy').textContent=metrics.powered?'Power supplied':'More power needed';
  const gi=GOALS.findIndex((g,i)=>!city.claimed.includes(i)),g=GOALS[gi]||GOALS.at(-1),pct=Math.min(100,Math.floor(city.population/g.pop*100));
- $('goalName').textContent=gi<0?'A city to be proud of':g.name;$('goalDescription').textContent=gi<0?'Every milestone reached. Keep making it yours.':g.description;$('goalProgress').textContent=Math.min(city.population,g.pop).toLocaleString()+' / '+g.pop.toLocaleString()+' residents';$('goalPercent').textContent=pct+'%';$('goalBar').style.width=pct+'%';$('goalReward').textContent=gi<0?'All grants earned':money(g.reward)+' city grant';
- let advice='A park or school brings a little more joy to everyday life.';
- if(!metrics.powered)advice='Your city needs more clean energy. Connect another wind turbine to your roads.';
- else if(metrics.capacity<=city.population+15)advice='Your homes are filling up. Build a cottage'+(city.population>=120?' or apartments':'')+' beside a road.';
- else if(metrics.jobs<city.population)advice='Your neighbors need places to work. Add a market or workshop beside a road.';
- else if(metrics.connected.size<Object.keys(city.tiles).length)advice='A building needs a road to City Hall. Look for the little warning above disconnected buildings.';
- else if(city.population<120)advice='Build homes and markets along your roads. New neighbors arrive every month.';
- $('advice').textContent=advice;
- $('month').textContent=months[city.month%12]+', Year '+(Math.floor(city.month/12)+1);$('season').textContent=city.paused?'Taking a little breather':city.month===0?'A fresh beginning':city.month%12<3?'Spring is in the air':city.month%12<6?'Long, lovely summer days':city.month%12<9?'A golden kind of autumn':'A cozy winter in town';
+ $('goalName').textContent=gi<0?'Every milestone reached':g.name;$('goalProgress').textContent=Math.min(city.population,g.pop).toLocaleString()+' / '+g.pop.toLocaleString();$('goalBar').style.width=pct+'%';
+ currentAdvice='A park or school brings a little more joy to everyday life.';
+ if(!metrics.powered)currentAdvice='Your city needs more clean energy. Connect another wind turbine to your roads.';
+ else if(metrics.capacity<=city.population+15)currentAdvice='Your homes are filling up. Build a cottage'+(city.population>=120?' or apartments':'')+' beside a road.';
+ else if(metrics.jobs<city.population)currentAdvice='Your neighbors need places to work. Add a market or workshop beside a road.';
+ else if(metrics.connected.size<Object.keys(city.tiles).length)currentAdvice='A building needs a road to City Hall. Look for the warning above disconnected buildings.';
+ else if(city.population<120)currentAdvice='Build homes and markets along your roads. New neighbors arrive every month.';
+ $('month').textContent=months[city.month%12]+', Year '+(Math.floor(city.month/12)+1);$('season').textContent=city.paused?'Game paused':city.month===0?'A fresh beginning':city.month%12<3?'Spring':city.month%12<6?'Summer':city.month%12<9?'Autumn':'Winter';
  $('pauseBtn').innerHTML=city.paused?'▶':'<span class="pause-glyph">Ⅱ</span>';$('pauseBtn').setAttribute('aria-label',city.paused?'Resume game':'Pause game');$('pauseBtn').classList.toggle('active',city.paused);$('speedBtn').textContent=city.speed+'×';
  renderBuildings();
 }
@@ -186,10 +191,10 @@ function drawThumbnail(c,type){const cc=c.getContext('2d'),original=ctx;cc.trans
  finally{ctx=original;}
 }
 function select(type){selected=selected===type?null:type;canvas.classList.toggle('building',!!selected);$('bulldozeBtn').classList.toggle('active',selected==='bulldoze');$('bulldozeBtn').setAttribute('aria-pressed',selected==='bulldoze');
- $('buildHeading').textContent=selected==='bulldoze'?'A little room for a new idea.':selected?CATALOG[selected].name+' · '+money(CATALOG[selected].cost):'Make room for possibility.';
- $('buildInstruction').textContent=selected==='bulldoze'?'Click a building to remove it. Recover 30% of the cost.':selected?CATALOG[selected].detail+'. Click a tile to build.':'Choose a building, then a little patch of land.';renderBuildings();$('tileTooltip').hidden=true;
+ $('buildHeading').textContent=selected==='bulldoze'?'A little room for a new idea.':selected?CATALOG[selected].name+' · '+money(CATALOG[selected].cost):'Your next great idea starts here.';
+ $('buildInstruction').textContent=selected==='bulldoze'?'Click a building to remove it. Recover 30% of the cost.':selected?CATALOG[selected].detail+'. Click a tile to build.':'Choose a building, then a little patch of land.';renderBuildings();$('tileTooltip').hidden=true;setBuildOpen(false);updateSelection();
 }
-function perform(tile){if(!tile)return;if(!selected){const type=city.tiles[key(tile.x,tile.y)];if(type){const c=CATALOG[type],connected=metrics.connected.has(key(tile.x,tile.y));toast(c.name+' · '+c.detail+(connected?'':' · Needs a connected road'));}else toast('Choose a building below, then click an empty tile.');return;}
+function perform(tile){if(!tile)return;if(!selected){const type=city.tiles[key(tile.x,tile.y)];if(type){const c=CATALOG[type],connected=metrics.connected.has(key(tile.x,tile.y));toast(c.name+' · '+c.detail+(connected?'':' · Needs a connected road'));}else toast('Open Build to choose a building, then click an empty tile.');return;}
  const type=selected,result=build(city,type,tile.x,tile.y);toast(result.message,!result.ok);if(result.ok){if(type!=='bulldoze'&&type!=='road')particles.push({...tile,type,start:performance.now()});renderUI();save();}
 }
 canvas.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;pointer={id:ev.pointerId,x:ev.clientX,y:ev.clientY,panX:view.panX,panY:view.panY};dragging=false;canvas.setPointerCapture(ev.pointerId);});
@@ -203,30 +208,67 @@ canvas.addEventListener('pointerleave',()=>{if(!dragging){hover=null;$('tileTool
 function showTooltip(ev){const tip=$('tileTooltip');if(!hover||dragging){tip.hidden=true;return;}const type=city.tiles[key(hover.x,hover.y)];
  let title='',detail='';if(selected){const error=placement(city,selected,hover.x,hover.y);title=selected==='bulldoze'?'Bulldoze':CATALOG[selected].name;detail=error||(selected==='bulldoze'?'Click to remove · 30% refund':(selected==='road'&&water(hover.x,hover.y)?'$45 bridge':'Click to build · '+money(CATALOG[selected].cost)));}
  else if(type){title=CATALOG[type].name;detail=CATALOG[type].detail+(metrics.connected.has(key(hover.x,hover.y))?'':' · No road connection');}else{tip.hidden=true;return;}
- tip.replaceChildren();const a=document.createElement('strong'),b=document.createElement('span');a.textContent=title;b.textContent=detail;tip.append(a,b);tip.hidden=false;const r=canvas.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(w-230,ev.clientX-r.left+15))+'px';tip.style.top=Math.max(95,Math.min(h-245,ev.clientY-r.top-55))+'px';
+ tip.replaceChildren();const a=document.createElement('strong'),b=document.createElement('span');a.textContent=title;b.textContent=detail;tip.append(a,b);tip.hidden=false;const r=canvas.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(w-250,ev.clientX-r.left+15))+'px';tip.style.top=Math.max(w<950?163:105,Math.min(h-110,ev.clientY-r.top-55))+'px';
 }
 function zoom(amount){view.zoom=Math.max(.65,Math.min(2.5,view.zoom+amount));updateScale();}
 canvas.addEventListener('wheel',ev=>{ev.preventDefault();zoom(ev.deltaY<0?.1:-.1);},{passive:false});
-$('zoomIn').addEventListener('click',()=>zoom(.15));$('zoomOut').addEventListener('click',()=>zoom(-.15));$('fitView').addEventListener('click',()=>{view={zoom:1,panX:0,panY:0};updateScale();});
+$('zoomIn').addEventListener('click',()=>zoom(.15));$('zoomOut').addEventListener('click',()=>zoom(-.15));$('fitView').addEventListener('click',()=>{view={zoom:window.innerWidth<600?1.85:1.08,panX:0,panY:0};updateScale();});
 $('pauseBtn').addEventListener('click',()=>{city.paused=!city.paused;renderUI();save();});$('speedBtn').addEventListener('click',()=>{city.speed=city.speed%3+1;renderUI();save();});$('bulldozeBtn').addEventListener('click',()=>select('bulldoze'));
 document.querySelectorAll('[data-category]').forEach(btn=>btn.addEventListener('click',()=>{category=btn.dataset.category;document.querySelectorAll('[data-category]').forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-selected',b===btn);});renderBuildings();}));
-document.addEventListener('keydown',ev=>{if($('modal').open||['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;
- if(ev.key==='Escape'){selected=null;select(null);hover=null;focusTile=null;}
+document.addEventListener('keydown',ev=>{if($('modal').open||ev.ctrlKey||ev.metaKey||ev.altKey||['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;
+ if(ev.key==='Escape'){selected=null;select(null);hover=null;focusTile=null;closeFloatingPanels();setBuildOpen(false);}
  if(ev.key.toLowerCase()==='b')select('bulldoze');
+ if(ev.key.toLowerCase()==='k')setBuildOpen($('buildDock').hidden);
+ if(ev.key.toLowerCase()==='f')toggleFullscreen();
  if(/^[1-8]$/.test(ev.key)){const t=['road','home','apartment','shop','factory','park','school','power'][Number(ev.key)-1];if(CATALOG[t].unlock>city.population)toast('This building unlocks at '+CATALOG[t].unlock+' residents.');else select(t);}
- if(ev.code==='Space'&&document.activeElement===canvas){ev.preventDefault();$('pauseBtn').click();}
+ if(ev.code==='Space'&&(document.activeElement===canvas||document.activeElement===document.body)){ev.preventDefault();$('pauseBtn').click();}
  if(document.activeElement===canvas&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(ev.key)){
   ev.preventDefault();focusTile??={x:9,y:9};hover=null;if(ev.key==='Enter'){perform(focusTile);return;}
   if(ev.key==='ArrowUp')focusTile.y=Math.max(0,focusTile.y-1);if(ev.key==='ArrowDown')focusTile.y=Math.min(SIZE-1,focusTile.y+1);if(ev.key==='ArrowLeft')focusTile.x=Math.max(0,focusTile.x-1);if(ev.key==='ArrowRight')focusTile.x=Math.min(SIZE-1,focusTile.x+1);
  }
 });
-function modal(html){$('modalContent').innerHTML=html;$('modal').showModal();$('tileTooltip').hidden=true;}
+function modal(html){closeFloatingPanels();$('modalContent').innerHTML=html;$('modal').showModal();$('tileTooltip').hidden=true;}
 $('closeModal').addEventListener('click',()=>$('modal').close());$('modal').addEventListener('click',ev=>{if(ev.target===$('modal')){const r=$('modal').getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)$('modal').close();}});
-$('helpBtn').addEventListener('click',()=>{modal(`<div class="modal-eyebrow">A little guide</div><h2 class="modal-title">Good cities start<br>with little things.</h2><p class="modal-description">Welcome, Mayor. This little valley is yours to shape, one street at a time.</p><div class="help-steps"><div class="help-step"><span class="step-number">1</span><div><strong>Make a place to call home.</strong><p>Choose a building below, then click an empty tile. Cottages welcome people; markets and workshops create jobs.</p></div></div><div class="help-step"><span class="step-number">2</span><div><strong>Keep everything connected.</strong><p>Buildings need an adjacent road that leads to City Hall. Wind turbines supply 12 buildings each. Roads can cross the river as bridges.</p></div></div><div class="help-step"><span class="step-number">3</span><div><strong>Let your little city grow.</strong><p>A month passes every 10 seconds at 1× speed. Residents arrive when there are homes, jobs, power, and happiness. Parks and schools lift spirits.</p></div></div></div><p class="modal-note">Drag the map to explore. Scroll to zoom. Keys 1–8 select buildings; B selects the bulldozer; Esc deselects. Focus the map and use arrow keys + Enter to build. Progress saves in this browser.</p><button class="primary-button" id="startPlaying">Let's build something lovely <span>↗</span></button>`);$('startPlaying').onclick=()=>$('modal').close();});
+$('helpBtn').addEventListener('click',()=>{modal(`<div class="modal-eyebrow">A little guide</div><h2 class="modal-title">Good cities start<br>with little things.</h2><p class="modal-description">Welcome, Mayor. This little valley is yours to shape, one street at a time.</p><div class="help-steps"><div class="help-step"><span class="step-number">1</span><div><strong>Make a place to call home.</strong><p>Open Build to choose a building, then click an empty tile. Cottages welcome people; markets and workshops create jobs.</p></div></div><div class="help-step"><span class="step-number">2</span><div><strong>Keep everything connected.</strong><p>Buildings need an adjacent road that leads to City Hall. Wind turbines supply 12 buildings each. Roads can cross the river as bridges.</p></div></div><div class="help-step"><span class="step-number">3</span><div><strong>Let your little city grow.</strong><p>A month passes every 10 seconds at 1× speed. Residents arrive when there are homes, jobs, power, and happiness. Parks and schools lift spirits.</p></div></div></div><p class="modal-note">Drag the map to explore. Scroll to zoom. Keys 1–8 select buildings; B selects the bulldozer; Esc deselects. Focus the map and use arrow keys + Enter to build. Press K to open building tools and F for full screen. The UI style button switches between four looks. Progress saves in this browser.</p><button class="primary-button" id="startPlaying">Let's build something lovely <span>↗</span></button>`);$('startPlaying').onclick=()=>$('modal').close();});
 $('renameBtn').addEventListener('click',()=>{modal('<div class="modal-eyebrow">Make it yours</div><h2 class="modal-title">Every city has a name.</h2><label class="modal-description" for="nameInput">What will you call your little corner of the world?</label><form id="renameForm"><input class="city-input" id="nameInput" maxlength="28" required autocomplete="off"><p class="modal-error" id="nameError"></p><button class="primary-button" type="submit">Save city name</button></form>');$('nameInput').value=city.name;$('nameInput').focus();$('nameInput').select();$('renameForm').onsubmit=ev=>{ev.preventDefault();const n=$('nameInput').value.trim();if(!n){$('nameError').textContent='Give your city a name first.';return;}city.name=n;renderUI();save();$('modal').close();toast('Welcome to '+city.name+'.');};});
 $('mapNameBtn').addEventListener('click',()=>$('renameBtn').click());
-$('cityReportBtn').addEventListener('click',()=>{const g=GOALS.find((v,i)=>!city.claimed.includes(i));modal(`<div class="modal-eyebrow">Your city, at a glance</div><h2 class="modal-title" id="reportTitle"></h2><div class="report-grid"><div><span>Residents / homes</span><strong>${city.population} / ${metrics.capacity}</strong></div><div><span>Employment</span><strong>${metrics.employment}%</strong></div><div><span>Power use / supply</span><strong>${metrics.used} / ${metrics.power}</strong></div><div><span>Monthly balance</span><strong>${metrics.income>=0?'+':'−'}${money(Math.abs(metrics.income))}</strong></div></div><p class="modal-description">${g?g.description+' Reach this milestone to earn a '+money(g.reward)+' grant.':'Every milestone reached. Keep making it yours.'}</p><p class="modal-note" id="reportAdvice"></p><button class="primary-button" id="closeReport">Back to my city</button>`);$('reportTitle').textContent=city.name;$('reportAdvice').textContent=$('advice').textContent;$('closeReport').onclick=()=>$('modal').close();});
-$('newCityBtn').addEventListener('click',()=>{modal(`<div class="modal-eyebrow">A fresh patch of possibility</div><h2 class="modal-title">Start a new little city?</h2><p class="modal-description">Your current city will be replaced. Start again with a small neighborhood and $3,200 to make something new.</p><button class="primary-button" id="confirmNewCity">Start a new city</button><button class="secondary-button" id="keepCity">Keep building this one</button>`);$('keepCity').onclick=()=>$('modal').close();$('confirmNewCity').onclick=()=>{city=freshCity();elapsed=0;view={zoom:1,panX:0,panY:0};selected=null;category='all';hover=null;focusTile=null;particles=[];document.querySelector('[data-category="all"]').click();select(null);updateScale();renderUI();save();$('modal').close();toast('A fresh start. Let’s build something lovely.');};});
+$('cityReportBtn').addEventListener('click',()=>{const g=GOALS.find((v,i)=>!city.claimed.includes(i));modal(`<div class="modal-eyebrow">Your city, at a glance</div><h2 class="modal-title" id="reportTitle"></h2><div class="report-grid"><div><span>Residents / capacity</span><strong>${city.population} / ${metrics.capacity}</strong></div><div><span>Employment</span><strong>${metrics.employment}%</strong></div><div><span>Power use / supply</span><strong>${metrics.used} / ${metrics.power}</strong></div><div><span>Monthly balance</span><strong>${metrics.income>=0?'+':'−'}${money(Math.abs(metrics.income))}</strong></div></div><p class="modal-description">${g?g.description+' Reach this milestone to earn a '+money(g.reward)+' grant.':'Every milestone reached. Keep making it yours.'}</p><p class="modal-note" id="reportAdvice"></p><button class="primary-button" id="closeReport">Back to my city</button>`);$('reportTitle').textContent=city.name;$('reportAdvice').textContent=currentAdvice;$('closeReport').onclick=()=>$('modal').close();});
+$('newCityBtn').addEventListener('click',()=>{modal(`<div class="modal-eyebrow">A fresh patch of possibility</div><h2 class="modal-title">Start a new little city?</h2><p class="modal-description">Your current city will be replaced. Start again with a small neighborhood and $3,200 to make something new.</p><button class="primary-button" id="confirmNewCity">Start a new city</button><button class="secondary-button" id="keepCity">Keep building this one</button>`);$('keepCity').onclick=()=>$('modal').close();$('confirmNewCity').onclick=()=>{city=freshCity();elapsed=0;view={zoom:window.innerWidth<600?1.85:1.08,panX:0,panY:0};selected=null;category='all';hover=null;focusTile=null;particles=[];document.querySelector('[data-category="all"]').click();select(null);updateScale();renderUI();save();$('modal').close();toast('A fresh start. Let’s build something lovely.');};});
+function updateSelection(){
+ $('clearSelection').hidden=!selected;
+ $('buildToggleLabel').textContent=!$('buildDock').hidden?'Close building tools':selected==='bulldoze'?'Bulldoze mode':selected?CATALOG[selected].name:'Build your city';
+}
+function setBuildOpen(open){
+ $('buildDock').hidden=!open;$('buildToggle').setAttribute('aria-expanded',String(open));document.body.classList.toggle('build-open',open);updateSelection();
+ if(open)closeFloatingPanels();
+}
+function closeFloatingPanels(){
+ $('stylePanel').hidden=true;$('gameMenu').hidden=true;$('styleBtn').setAttribute('aria-expanded','false');$('menuBtn').setAttribute('aria-expanded','false');
+}
+function setTheme(name,persist=true){
+ uiTheme=resolveTheme(name);document.body.dataset.theme=uiTheme;$('activeThemeLabel').textContent=THEMES[uiTheme].name;
+ document.querySelectorAll('[data-theme]').forEach(button=>{if(button===document.body)return;const active=button.dataset.theme===uiTheme;button.setAttribute('aria-pressed',String(active));const label=button.querySelector('.theme-selected');if(label)label.innerHTML=active?'Selected <b>✓</b>':'Use this style <b>↗</b>';});
+ const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',THEMES[uiTheme].sky[1]);
+ if(persist)try{localStorage.setItem(UI_THEME_KEY,uiTheme);}catch{toast('Style applied. This browser could not save your preference.');}
+ renderBuildings();
+}
+async function toggleFullscreen(){
+ try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('This browser does not support full-screen mode. The game still fills the window.');}
+ catch{toast('Full-screen mode is unavailable in this window.');}
+}
+$('buildToggle').addEventListener('click',()=>setBuildOpen($('buildDock').hidden));$('closeBuild').addEventListener('click',()=>setBuildOpen(false));
+$('clearSelection').addEventListener('click',()=>{selected=null;select(null);canvas.focus();});
+$('styleBtn').addEventListener('click',()=>{const open=$('stylePanel').hidden;closeFloatingPanels();$('stylePanel').hidden=!open;$('styleBtn').setAttribute('aria-expanded',String(open));});
+$('closeStyles').addEventListener('click',()=>{closeFloatingPanels();$('styleBtn').focus();});
+$('menuBtn').addEventListener('click',()=>{const open=$('gameMenu').hidden;closeFloatingPanels();$('gameMenu').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open));});
+$('milestoneBtn').addEventListener('click',()=>$('cityReportBtn').click());
+$('fullscreenBtn').addEventListener('click',toggleFullscreen);
+if(!document.documentElement.requestFullscreen)$('fullscreenBtn').hidden=true;
+// Native full-screen changes also happen when the player presses Escape.
+document.addEventListener('fullscreenchange',()=>{$('fullscreenBtn').setAttribute('aria-label',document.fullscreenElement?'Exit full screen':'Enter full screen');$('fullscreenBtn').title=document.fullscreenElement?'Exit full screen (F)':'Full screen (F)';resize();});
+document.querySelectorAll('.theme-card').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.theme)));
+document.addEventListener('pointerdown',ev=>{if(!$('stylePanel').hidden&&!$('stylePanel').contains(ev.target)&&!$('styleBtn').contains(ev.target)){$('stylePanel').hidden=true;$('styleBtn').setAttribute('aria-expanded','false');}if(!$('gameMenu').hidden&&!$('gameMenu').contains(ev.target)&&!$('menuBtn').contains(ev.target)){$('gameMenu').hidden=true;$('menuBtn').setAttribute('aria-expanded','false');}});
+setTheme(uiTheme,false);setBuildOpen(false);
 document.addEventListener('visibilitychange',()=>{lastFrame=0;if(document.hidden)save();});window.addEventListener('beforeunload',save);
 new ResizeObserver(resize).observe(canvas);renderUI();resize();requestAnimationFrame(draw);save();
-if(!restoredSave)setTimeout(()=>toast('Welcome, Mayor. Choose a building below to get started.'),600);
+if(!restoredSave)setTimeout(()=>toast('Welcome, Mayor. Open Build to start your city. Try the four UI styles in the top corner.'),600);
