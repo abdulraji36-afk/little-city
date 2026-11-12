@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#243e34"><meta name="description" content="Build something lovely. A cozy city-building game about little streets and big ideas.">
+  <title>Little City — A city of your own</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23243e34'/%3E%3Cpath d='M12 34 32 16 52 34v23H12Z' fill='%23f1d39e'/%3E%3Cpath d='M27 40h11v17H27Z' fill='%23243e34'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z M9 20v-7h6v7"/></symbol>
+<symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3 M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 6"/></symbol>
+<symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9m3-10v12"/></symbol>
+<symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14a4 4 0 0 0 8 0 M8 8v1m8-1v1"/></symbol>
+<symbol id="i-power" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-12h-7Z"/></symbol>
+<symbol id="i-tree" viewBox="0 0 24 24"><path d="m12 2 7 9h-3l5 7H3l5-7H5Z M12 18v4"/></symbol>
+<symbol id="i-work" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12a22 22 0 0 0 18 0m-9 0v4"/></symbol>
+<symbol id="i-road" viewBox="0 0 24 24"><path d="m7 2-4 20m14-20 4 20M12 2v4m0 4v4m0 4v4"/></symbol>
+<symbol id="i-cup" viewBox="0 0 24 24"><path d="M7 3h10v6a5 5 0 0 1-10 0ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v6m-4 0h8"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+<symbol id="i-bulldoze" viewBox="0 0 24 24"><path d="M3 18h18M5 15v-5h8l3 5M8 10V5h5v5m5 1 3 6v3"/><circle cx="7" cy="17" r="3"/><circle cx="14" cy="17" r="3"/></symbol>
+<symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 3C7 2 2 7 5 15s16 6 15-12ZM4 21 16 9"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 22V3c6-4 8 4 14 0v10c-6 4-8-4-14 0"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l2-7L17 2l5 5-11 11Z"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+</defs></svg>
+<header class="topbar">
+  <a class="brand" href="./" aria-label="Little City home"><span class="brand-mark"><svg><use href="#i-home"/></svg><span class="little-tree"></span></span><span>little city<span class="brand-dot">.</span></span></a>
+  <div class="brand-caption">BIG IDEAS. LITTLE STREETS.</div>
+  <div class="header-actions"><span class="save-state" id="saveState"><svg><use href="#i-save"/></svg>All changes saved</span><button class="icon-button" id="helpBtn" aria-label="How to play" title="How to play"><svg><use href="#i-info"/></svg></button><button class="new-city" id="newCityBtn">New city <span>↗</span></button></div>
+</header>
+<main class="game-layout">
+<aside class="sidebar">
+  <div class="city-label"><span class="status-dot"></span>YOUR LITTLE CORNER OF THE WORLD</div>
+  <button class="city-title" id="renameBtn" title="Rename your city"><h1 id="cityName">Willowbrook</h1><svg><use href="#i-edit"/></svg></button>
+  <p class="city-description" id="cityDescription">A small town with a big tomorrow.</p>
+  <div class="level-tag"><svg><use href="#i-leaf"/></svg><span id="cityLevel">Budding village</span></div>
+  <div class="side-divider"></div>
+  <div class="section-label">CITY AT A GLANCE <span>↗</span></div>
+  <div class="city-metric"><span class="metric-icon mint"><svg><use href="#i-people"/></svg></span><div><span>Population</span><strong id="sidePopulation">64</strong></div><span class="metric-aside" id="capacityLabel">/ 96</span></div>
+  <div class="city-metric"><span class="metric-icon sand"><svg><use href="#i-work"/></svg></span><div><span>Employment</span><strong id="employment">100%</strong></div><span class="metric-aside" id="jobsLabel">72 jobs</span></div>
+  <div class="city-metric"><span class="metric-icon lavender"><svg><use href="#i-power"/></svg></span><div><span>Clean energy</span><strong id="powerLabel">8 / 12</strong></div><span class="energy-dot" id="energyDot"></span></div>
+  <div class="side-divider"></div>
+  <div class="section-label">THE NEXT LITTLE MILESTONE</div>
+  <div class="milestone-card"><div class="milestone-icon"><svg><use href="#i-flag"/></svg></div><h2 id="goalName">A place to call home</h2><p id="goalDescription">Welcome 120 residents to your city.</p><div class="goal-progress-label"><span id="goalProgress">64 / 120 residents</span><strong id="goalPercent">53%</strong></div><div class="progress-track"><div id="goalBar"></div></div><div class="reward"><svg><use href="#i-coin"/></svg><span id="goalReward">$600 city grant</span></div></div>
+  <div class="adviser"><div class="adviser-avatar"><svg><use href="#i-leaf"/></svg></div><div><strong>A little advice</strong><p id="advice">Build homes and markets to help your neighborhood grow.</p></div></div>
+  <div class="sidebar-footer"><span class="status-dot"></span>Take your time. Make it yours.</div>
+</aside>
+<section class="world" aria-label="City builder">
+  <canvas id="cityCanvas" tabindex="0" aria-label="Interactive city map. Select a building below, then click a tile to build. Drag to move. Use arrow keys and Enter to build with the keyboard."></canvas>
+  <div class="world-top">
+    <div class="stat-strip"><div class="top-stat"><span class="stat-symbol gold"><svg><use href="#i-coin"/></svg></span><div><span>TREASURY</span><strong id="money">$3,200</strong></div><span class="income" id="income">+$97/mo</span></div><div class="stat-separator"></div><div class="top-stat"><span class="stat-symbol green"><svg><use href="#i-smile"/></svg></span><div><span>HAPPINESS</span><strong id="happiness">80<span>%</span></strong></div><div class="happy-bar"><i id="happyBar"></i></div></div></div>
+    <div class="time-panel"><div class="date"><span class="weather-sun">☀</span><div><strong id="month">March, Year 1</strong><span id="season">A fresh beginning</span></div></div><div class="time-buttons"><button id="pauseBtn" title="Pause (Space)" aria-label="Pause game"><span class="pause-glyph">Ⅱ</span></button><button id="speedBtn" title="Change simulation speed" aria-label="Simulation speed">1×</button></div><div class="month-track"><i id="monthBar"></i></div></div>
+  </div>
+  <button class="mobile-overview" id="cityReportBtn" aria-label="Open city report"><span><svg><use href="#i-people"/></svg><b id="mobilePopulation">64</b> residents</span><span><svg><use href="#i-work"/></svg><b id="mobileJobs">72</b> jobs</span><span><svg><use href="#i-power"/></svg><b id="mobileEnergy">8/12</b></span><span class="report-link">City report ↗</span></button>
+  <button class="map-label" id="mapNameBtn" title="Rename your city" aria-label="Rename your city"><span class="status-dot"></span><span id="mapCityName">WILLOWBROOK · RIVER VALLEY</span></button>
+  <div class="map-tools"><button id="zoomIn" aria-label="Zoom in" title="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out" title="Zoom out">−</button><span></span><button id="fitView" aria-label="Center city" title="Center city">⌖</button></div>
+  <div class="tile-tooltip" id="tileTooltip" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="build-area">
+    <div class="build-heading"><div><span class="build-heading-dot"></span><strong id="buildHeading">Make room for possibility.</strong><span class="build-instruction" id="buildInstruction">Choose a building, then a little patch of land.</span></div><span class="map-hint">Drag to explore <span>·</span> Scroll to zoom</span></div>
+    <div class="build-dock"><div class="dock-top"><div class="categories" role="tablist" aria-label="Building category"><button class="active" data-category="all" role="tab" aria-selected="true">Everything</button><button data-category="homes" role="tab" aria-selected="false"><svg><use href="#i-home"/></svg>Homes</button><button data-category="work" role="tab" aria-selected="false"><svg><use href="#i-work"/></svg>Work</button><button data-category="life" role="tab" aria-selected="false"><svg><use href="#i-tree"/></svg>Life</button><button data-category="utility" role="tab" aria-selected="false"><svg><use href="#i-power"/></svg>Utilities</button></div><button class="bulldoze-btn" id="bulldozeBtn" title="Bulldoze (B)"><svg><use href="#i-bulldoze"/></svg><span>Bulldoze</span></button></div><div class="building-list" id="buildingList"></div></div>
+    <div class="build-footer"><span><span class="keyboard-key">esc</span> to deselect</span><span>Made for the joy of building<span class="footer-flower">✳</span></span></div>
+  </div>
+</section>
+</main>
+<dialog id="modal"><button class="modal-close icon-button" id="closeModal" aria-label="Close"><svg><use href="#i-close"/></svg></button><div id="modalContent"></div></dialog>
+<script type="module" src="app.mjs"></script>
+</body></html>
